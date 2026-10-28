@@ -80,3 +80,30 @@ resource "azurerm_network_interface" "nic" {
     public_ip_address_id          = azurerm_public_ip.pip.id
   }
 }
+
+# 5. Machine virtuelle Linux (Ubuntu)
+resource "azurerm_linux_virtual_machine" "vm" {
+  name                            = "vm-cicd-demo"
+  resource_group_name             = azurerm_resource_group.myResourceGroup.name
+  location                        = azurerm_resource_group.myResourceGroup.location
+  size                            = "Standard_B1s"
+  admin_username                  = "azureuser"
+  admin_password                  = "AdminLab2026!#"
+  disable_password_authentication = false
+
+  network_interface_ids = [
+    azurerm_network_interface.nic.id,
+  ]
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
+    version   = "latest"
+  }
+}
