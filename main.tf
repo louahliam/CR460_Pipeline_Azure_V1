@@ -35,3 +35,9 @@ provider "azurerm" {
   client_secret   = var.client_secret
   tenant_id       = var.tenant_id
 }
+
+# Declaration du groupe de ressources principal
+resource "azurerm_resource_group" "myResourceGroup" {
+  name     = "DEMO-PPL-10-demo-az-vcs"
+  location = "eastus"
+}
