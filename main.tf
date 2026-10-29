@@ -38,7 +38,7 @@ provider "azurerm" {
 
 # Declaration du groupe de ressources principal
 resource "azurerm_resource_group" "myResourceGroup" {
-  name     = "DEMO-PPL-10-demo-az-vcs"
+  name     = "DEMO-PPL-10-demo-az-ca"
   location = "canadacentral"
 }
 
