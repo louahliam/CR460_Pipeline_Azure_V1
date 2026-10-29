@@ -86,7 +86,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-cicd-demo"
   resource_group_name             = azurerm_resource_group.myResourceGroup.name
   location                        = azurerm_resource_group.myResourceGroup.location
-  size                            = "Standard_D2s_v3"
+  size                            = "Standard_B1s"
   admin_username                  = "azureuser"
   admin_password                  = "AdminLab2026!#"
   disable_password_authentication = false
