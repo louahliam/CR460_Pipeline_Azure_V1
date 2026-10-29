@@ -36,13 +36,13 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
 }
 
-# Declaration du groupe de ressources principal
+# 1. Groupe de ressources dans canadaeast
 resource "azurerm_resource_group" "myResourceGroup" {
-  name     = "DEMO-PPL-10-demo-az-ca"
-  location = "canadacentral"
+  name     = "DEMO-PPL-10-demo-az-east"
+  location = "canadaeast"
 }
 
-# 1. Reseau virtuel (VNet)
+# 2. Reseau virtuel (VNet)
 resource "azurerm_virtual_network" "vnet" {
   name                = "vnet-cicd-demo"
   address_space       = ["10.0.0.0/16"]
@@ -50,7 +50,7 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.myResourceGroup.name
 }
 
-# 2. Sous-reseau (Subnet)
+# 3. Sous-reseau (Subnet)
 resource "azurerm_subnet" "subnet" {
   name                 = "snet-workload"
   resource_group_name  = azurerm_resource_group.myResourceGroup.name
@@ -58,7 +58,7 @@ resource "azurerm_subnet" "subnet" {
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-# 3. Adresse IP Publique (SKU Standard)
+# 4. Adresse IP Publique (Standard / Static)
 resource "azurerm_public_ip" "pip" {
   name                = "pip-vm-demo"
   location            = azurerm_resource_group.myResourceGroup.location
@@ -67,7 +67,7 @@ resource "azurerm_public_ip" "pip" {
   sku                 = "Standard"
 }
 
-# 4. Interface reseau (NIC)
+# 5. Interface reseau (NIC)
 resource "azurerm_network_interface" "nic" {
   name                = "nic-vm-demo"
   location            = azurerm_resource_group.myResourceGroup.location
@@ -81,12 +81,12 @@ resource "azurerm_network_interface" "nic" {
   }
 }
 
-# 5. Machine virtuelle Linux (Ubuntu)
+# 6. Machine virtuelle Linux Ubuntu (taille confirmee disponible sur canadaeast)
 resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "vm-cicd-demo"
   resource_group_name             = azurerm_resource_group.myResourceGroup.name
   location                        = azurerm_resource_group.myResourceGroup.location
-  size                            = "Standard_A1_v2"
+  size                            = "Standard_D2als_v6"
   admin_username                  = "azureuser"
   admin_password                  = "AdminLab2026!#"
   disable_password_authentication = false
