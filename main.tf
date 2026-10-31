@@ -7,27 +7,6 @@ terraform {
   }
 }
 
-variable "subscription_id" {
-  type        = string
-  description = "ID de la souscription Azure cible"
-}
-
-variable "client_id" {
-  type        = string
-  description = "App ID du Service Principal"
-}
-
-variable "client_secret" {
-  type        = string
-  description = "Secret d'authentification du Service Principal"
-  sensitive   = true
-}
-
-variable "tenant_id" {
-  type        = string
-  description = "ID du tenant Entra ID"
-}
-
 provider "azurerm" {
   features {}
   subscription_id = var.subscription_id
@@ -36,15 +15,15 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
 }
 
-# 1. Groupe de ressources dans canadaeast
+# 1. Groupe de ressources (parametrage region + nom)
 resource "azurerm_resource_group" "myResourceGroup" {
-  name     = "DEMO-PPL-10-demo-az-east"
-  location = "canadaeast"
+  name     = "${var.resource_prefix}-rg"
+  location = var.azure_region
 }
 
 # 2. Reseau virtuel (VNet)
 resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-cicd-demo"
+  name                = "${var.resource_prefix}-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.myResourceGroup.location
   resource_group_name = azurerm_resource_group.myResourceGroup.name
@@ -52,15 +31,15 @@ resource "azurerm_virtual_network" "vnet" {
 
 # 3. Sous-reseau (Subnet)
 resource "azurerm_subnet" "subnet" {
-  name                 = "snet-workload"
+  name                 = "${var.resource_prefix}-snet"
   resource_group_name  = azurerm_resource_group.myResourceGroup.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
-# 4. Adresse IP Publique (Standard / Static)
+# 4. Adresse IP Publique
 resource "azurerm_public_ip" "pip" {
-  name                = "pip-vm-demo"
+  name                = "${var.resource_prefix}-pip"
   location            = azurerm_resource_group.myResourceGroup.location
   resource_group_name = azurerm_resource_group.myResourceGroup.name
   allocation_method   = "Static"
@@ -69,7 +48,7 @@ resource "azurerm_public_ip" "pip" {
 
 # 5. Interface reseau (NIC)
 resource "azurerm_network_interface" "nic" {
-  name                = "nic-vm-demo"
+  name                = "${var.resource_prefix}-nic"
   location            = azurerm_resource_group.myResourceGroup.location
   resource_group_name = azurerm_resource_group.myResourceGroup.name
 
@@ -81,12 +60,12 @@ resource "azurerm_network_interface" "nic" {
   }
 }
 
-# 6. Machine virtuelle Linux Ubuntu (taille confirmee disponible sur canadaeast)
+# 6. Machine virtuelle Linux Ubuntu (parametrage taille VM)
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                            = "vm-cicd-demo"
+  name                            = "${var.resource_prefix}-vm"
   resource_group_name             = azurerm_resource_group.myResourceGroup.name
   location                        = azurerm_resource_group.myResourceGroup.location
-  size                            = "Standard_D2als_v6"
+  size                            = var.vm_size
   admin_username                  = "azureuser"
   admin_password                  = "AdminLab2026!#"
   disable_password_authentication = false
@@ -108,13 +87,13 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 }
 
-# 7. Groupe de conteneurs Azure (ACI)
+# 7. Conteneur ACI
 resource "azurerm_container_group" "aci" {
-  name                = "aci-cicd-demo"
+  name                = "${var.resource_prefix}-aci"
   location            = azurerm_resource_group.myResourceGroup.location
   resource_group_name = azurerm_resource_group.myResourceGroup.name
   ip_address_type     = "Public"
-  dns_name_label      = "aci-demo-cr460-simo"
+  dns_name_label      = "${var.resource_prefix}-aci-simo"
   os_type             = "Linux"
 
   container {
