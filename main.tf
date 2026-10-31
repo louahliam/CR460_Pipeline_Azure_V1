@@ -4,15 +4,36 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    # AJOUT Q12 : pour générer le mot de passe et le nom unique
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    # AJOUT Q12 : gestion du cycle de vie du Key Vault
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = true
+    }
+  }
   subscription_id = var.subscription_id
   client_id       = var.client_id
   client_secret   = var.client_secret
   tenant_id       = var.tenant_id
+}
+
+# AJOUT Q12 : récupère l'identité du Service Principal pour lui donner les droits sur le coffre
+data "azurerm_client_config" "current" {}
+
+# AJOUT Q12 : suffixe aléatoire car le nom d'un Key Vault est mondialement unique
+resource "random_string" "suffix" {
+  length  = 6
+  special = false
+  upper   = false
 }
 
 # 1. Groupe de ressources (parametrage region + nom)
@@ -60,6 +81,40 @@ resource "azurerm_network_interface" "nic" {
   }
 }
 
+# AJOUT Q12 : 1. Génération automatique du mot de passe fort
+resource "random_password" "vm_password" {
+  length           = 16
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+# AJOUT Q12 : 2. Création du coffre Azure Key Vault
+resource "azurerm_key_vault" "kv" {
+  name                        = "kv-${var.resource_prefix}-${random_string.suffix.result}"
+  location                    = azurerm_resource_group.myResourceGroup.location
+  resource_group_name         = azurerm_resource_group.myResourceGroup.name
+  tenant_id                   = var.tenant_id
+  sku_name                    = "standard"
+  soft_delete_retention_days  = 7
+  purge_protection_enabled    = false
+
+  access_policy {
+    tenant_id = var.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+
+    secret_permissions = [
+      "Get", "List", "Set", "Delete", "Purge", "Recover"
+    ]
+  }
+}
+
+# AJOUT Q12 : 3. Enregistrement du secret dans le coffre
+resource "azurerm_key_vault_secret" "vm_admin_password" {
+  name         = "vm-admin-password"
+  value        = random_password.vm_password.result
+  key_vault_id = azurerm_key_vault.kv.id
+}
+
 # 6. Machine virtuelle Linux Ubuntu (parametrage taille VM)
 resource "azurerm_linux_virtual_machine" "vm" {
   name                            = "${var.resource_prefix}-vm"
@@ -67,7 +122,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
   location                        = azurerm_resource_group.myResourceGroup.location
   size                            = var.vm_size
   admin_username                  = "azureuser"
-  admin_password                  = "AdminLab2026!#"
+  admin_password                  = azurerm_key_vault_secret.vm_admin_password.value
   disable_password_authentication = false
 
   network_interface_ids = [
