@@ -166,7 +166,7 @@ output "acr_admin_username" {
   value = azurerm_container_registry.acr.admin_username
 }
 
-# Conteneur ACI
+# Conteneur ACI connecte a l'image privee ACR
 resource "azurerm_container_group" "aci" {
   name                = "${var.resource_prefix}-aci"
   location            = azurerm_resource_group.myResourceGroup.location
@@ -175,9 +175,17 @@ resource "azurerm_container_group" "aci" {
   dns_name_label      = "${var.resource_prefix}-aci-simo"
   os_type             = "Linux"
 
+  # Authentification securisee aupres du registre ACR
+  image_registry_credential {
+    server   = azurerm_container_registry.acr.login_server
+    username = azurerm_container_registry.acr.admin_username
+    password = azurerm_container_registry.acr.admin_password
+  }
+
   container {
-    name   = "hello-world"
-    image  = "mcr.microsoft.com/azuredocs/aci-helloworld:latest"
+    name   = "cr460-web"
+    # Consommation de l'image privee creee a l'etape 2
+    image  = "${azurerm_container_registry.acr.login_server}/cr460-web:v1"
     cpu    = "1.0"
     memory = "1.5"
 
@@ -186,5 +194,11 @@ resource "azurerm_container_group" "aci" {
       protocol = "TCP"
     }
   }
+
   tags = var.common_tags
+}
+
+output "aci_url" {
+  value       = "http://${azurerm_container_group.aci.fqdn}"
+  description = "URL publique d'acces au service conteneurise"
 }
