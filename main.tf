@@ -145,6 +145,27 @@ resource "azurerm_linux_virtual_machine" "vm" {
   tags = var.common_tags
 }
 
+# QUESTION 14 : Azure Container Registry (ACR)
+resource "azurerm_container_registry" "acr" {
+  # Nom alphanumérique unique obligatoire (ex: acrcr460demoxxxxx)
+  name                = replace("acr${var.resource_prefix}${random_string.suffix.result}", "-", "")
+  resource_group_name = azurerm_resource_group.myResourceGroup.name
+  location            = azurerm_resource_group.myResourceGroup.location
+  sku                 = "Basic"
+  admin_enabled       = true
+
+  tags = var.common_tags
+}
+
+# Sorties utiles pour le build et le push de l'image
+output "acr_login_server" {
+  value = azurerm_container_registry.acr.login_server
+}
+
+output "acr_admin_username" {
+  value = azurerm_container_registry.acr.admin_username
+}
+
 # Conteneur ACI
 resource "azurerm_container_group" "aci" {
   name                = "${var.resource_prefix}-aci"
