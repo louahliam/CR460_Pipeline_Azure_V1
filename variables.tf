@@ -39,3 +39,12 @@ variable "vm_size" {
   description = "Gabarit de la VM"
   default     = "Standard_D2als_v6"
 }
+
+# --- Tag de gestion des coûts ---
+variable "common_tags" {
+  type        = map(string)
+  description = "Tags de suivi des coûts"
+  default = {
+    Projet = "DevoirCR460"
+  }
+}
